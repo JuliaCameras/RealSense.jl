@@ -1,3 +1,7 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
+
+deps/librealsense
+deps/deps.jl
+gen/librealsense
