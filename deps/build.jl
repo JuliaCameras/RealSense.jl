@@ -1,4 +1,3 @@
-using Base.LibGit2
 include(joinpath(@__DIR__, "..", "deps", "version.jl"))
 
 @static if is_windows()
@@ -13,7 +12,7 @@ include(joinpath(@__DIR__, "..", "deps", "version.jl"))
         error("Couldn't find realsense2.dll in the path $WINDOWS_DLL_DIR. Please install Intel RealSense SDK 2.0 and then run Pkg.build(\"RealSense\").")
     else
         # version check
-        const librealsense = Libdl.dlpath(lib)
+        const librealsense = Libdl.dlpath(lib) |> x->replace(x, "\\", "\\\\")
     end
 end
 
