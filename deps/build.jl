@@ -1,29 +1,44 @@
 include(joinpath(@__DIR__, "..", "deps", "version.jl"))
 
 @static if is_windows()
-    info("This package assumes you've already installed Intel RealSense SDK 2.0.")
+    info("This package assumes you've already installed Intel RealSense SDK 2.0 on Windows.")
     const WINDOWS_SDK_DIR = joinpath(homedir(), "..", "..", "Program Files (x86)") |> normpath
-    const WINDOWS_DLL_DIR = joinpath(WINDOWS_SDK_DIR, "Intel RealSense SDK 2.0", "bin", "x$(Sys.WORD_SIZE)")
-    # possible shared library locations, you could also add yours here
-    locations = [WINDOWS_DLL_DIR]
+    const WINDOWS_DEFAULT_DIR = joinpath(WINDOWS_SDK_DIR, "Intel RealSense SDK 2.0", "bin", "x$(Sys.WORD_SIZE)")
+    # possible shared library locations, you could also add yours if you installed the SDK in other place
+    locations = [WINDOWS_DEFAULT_DIR]
     # try to find the lib
     lib = Libdl.find_library(["realsense2"], locations)
     if lib == ""
-        error("Couldn't find realsense2.dll in the path $WINDOWS_DLL_DIR. Please install Intel RealSense SDK 2.0 and then run Pkg.build(\"RealSense\").")
+        error("Couldn't find realsense2.dll in the default directory $WINDOWS_DEFAULT_DIR. Please install Intel RealSense SDK 2.0 and then run Pkg.build(\"RealSense\").")
     else
         const librealsense = Libdl.dlpath(lib) |> x->replace(x, "\\", "\\\\")
     end
 end
 
-@static if is_apple()
-    const HOMEBREW = "/usr/local/Homebrew/bin/brew"
-    const MACOS_LIB_DIR = joinpath("usr", "local", "lib")
-    # possible shared library locations, you could also add yours here
-    locations = [MACOS_LIB_DIR]
+@static if is_linux()
+    info("This package assumes you've already installed Intel RealSense SDK 2.0 on Ubuntu.")
+    const LINUX_DEFAULT_DIR = "/usr/lib/x86_64-linux-gnu/"
+    # possible shared library locations, you could also add yours if you installed the SDK in other place
+    locations = [LINUX_DEFAULT_DIR]
     # try to find the lib
     lib = Libdl.find_library(["librealsense2"], locations)
     if lib == ""
-        warn("Couldn't find librealsense2.dylib in the path $MACOS_LIB_DIR. Attempting to install Intel RealSense SDK 2.0 locally.")
+        error("Couldn't find librealsense2.so in the default directory $LINUX_DEFAULT_DIR. Please install Intel RealSense SDK 2.0 and then run Pkg.build(\"RealSense\").")
+    else
+        const librealsense = Libdl.dlpath(lib)
+    end
+end
+
+
+@static if is_apple()
+    const HOMEBREW = "/usr/local/Homebrew/bin/brew"
+    const MACOS_DEFAULT_DIR = "/usr/local/lib"
+    # possible shared library locations, you could also add yours if you installed the SDK in other place
+    locations = [MACOS_DEFAULT_DIR]
+    # try to find the lib
+    lib = Libdl.find_library(["librealsense2"], locations)
+    if lib == ""
+        warn("Couldn't find librealsense2.dylib in the default directory $MACOS_DEFAULT_DIR. Attempting to build and install Intel RealSense SDK 2.0 locally.")
         # clone SDK source code locally
         librealsenseDIR = joinpath(@__DIR__, "librealsense")
         if !isdir(librealsenseDIR)
@@ -53,11 +68,6 @@ end
     else
         const librealsense = Libdl.dlpath(lib)
     end
-end
-
-
-@static if is_linux()
-
 end
 
 
