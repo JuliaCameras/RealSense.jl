@@ -25,4 +25,6 @@ using .CEnum
 include(joinpath(@__DIR__, "..", "gen", "api", "rs2_common.jl"))
 include(joinpath(@__DIR__, "..", "gen", "api", "rs2_api.jl"))
 
+include("export.jl")
+
 end # module

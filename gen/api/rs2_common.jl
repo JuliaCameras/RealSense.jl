@@ -1,7 +1,5 @@
 # Automatically generated using Clang.jl wrap_c, version 0.0.0
 
-using Compat
-
 const STDepthControlGroup = Void
 const STRsm = Void
 const STRauSupportVectorControl = Void
@@ -297,34 +295,34 @@ end
 	RS2_MATCHER_COUNT = 5,
 )
 
-rs2_device_info = Void
-rs2_device = Void
-rs2_error = Void
-rs2_raw_data_buffer = Void
-rs2_frame = Void
-rs2_frame_queue = Void
-rs2_pipeline = Void
-rs2_pipeline_profile = Void
-rs2_config = Void
-rs2_device_list = Void
-rs2_stream_profile_list = Void
-rs2_stream_profile = Void
-rs2_frame_callback = Void
-rs2_log_callback = Void
-rs2_syncer = Void
-rs2_device_serializer = Void
-rs2_source = Void
-rs2_processing_block = Void
-rs2_frame_processor_callback = Void
-rs2_playback_status_changed_callback = Void
-rs2_context = Void
-rs2_device_hub = Void
-rs2_sensor_list = Void
-rs2_sensor = Void
-rs2_options = Void
-rs2_devices_changed_callback = Void
-rs2_notification = Void
-rs2_notifications_callback = Void
+const rs2_device_info = Void
+const rs2_device = Void
+const rs2_error = Void
+const rs2_raw_data_buffer = Void
+const rs2_frame = Void
+const rs2_frame_queue = Void
+const rs2_pipeline = Void
+const rs2_pipeline_profile = Void
+const rs2_config = Void
+const rs2_device_list = Void
+const rs2_stream_profile_list = Void
+const rs2_stream_profile = Void
+const rs2_frame_callback = Void
+const rs2_log_callback = Void
+const rs2_syncer = Void
+const rs2_device_serializer = Void
+const rs2_source = Void
+const rs2_processing_block = Void
+const rs2_frame_processor_callback = Void
+const rs2_playback_status_changed_callback = Void
+const rs2_context = Void
+const rs2_device_hub = Void
+const rs2_sensor_list = Void
+const rs2_sensor = Void
+const rs2_options = Void
+const rs2_devices_changed_callback = Void
+const rs2_notification = Void
+const rs2_notifications_callback = Void
 
 const rs2_notification_callback_ptr = Ptr{Void}
 const rs2_devices_changed_callback_ptr = Ptr{Void}
