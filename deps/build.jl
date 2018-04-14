@@ -63,15 +63,33 @@ end
 
 open(joinpath(@__DIR__, "deps.jl"), "w") do f
     println(f, """
+    include("version.jl")
+
     const librealsense2 = "$librealsense"
+
     function check_deps()
         global librealsense2
         if !isfile(librealsense2)
             error("\$(librealsense2) does not exist, Please re-run Pkg.build(\\"RealSense\\"), and restart Julia.")
         end
 
-        if Libdl.dlopen_e(librealsense2) == C_NULL
+        hdl = Libdl.dlopen_e(librealsense2)
+        if hdl == C_NULL
             error("\$(librealsense2) cannot be opened, Please re-run Pkg.build(\\"RealSense\\"), and restart Julia.")
+        else
+            get_api_version = Libdl.dlsym_e(hdl, :rs2_get_api_version)
+            @assert get_api_version != C_NULL "Could not find `rs2_get_api_version` within \$(librealsense2)."
+            err = Ref{Ptr{Void}}(0)
+            version = ccall(get_api_version, Cint, (Ptr{Ptr{Void}},), err)
+            @assert err[] == C_NULL "Something happened when calling `rs2_get_api_version`."
+            major = version ÷ 10000
+            minor = (version - 10000*major) ÷ 100
+            patch = (version - 10000*major - 100*minor)
+            if major != LIBREALSENSE_VERSION.major && minor != LIBREALSENSE_VERSION.minor
+                error(\"\"\"API version mismatch:
+                      The librealsense's API version is v\$(major).\$(minor).\$(patch), but the one used in RealSense.jl is \$(LIBREALSENSE_VERSION).
+                      Please either upgrade Intel RealSense SDK or RealSense.jl.\"\"\")
+            end
         end
     end
     """)

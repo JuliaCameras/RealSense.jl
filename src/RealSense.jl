@@ -9,13 +9,12 @@ end
 # Load in `deps.jl`, complaining if it does not exist
 const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
 if !isfile(depsjl_path)
-    error("RealSense was not build properly. Please run Pkg.build(\"RealSense\")")
+    error("RealSense was not build properly. Please run Pkg.build(\"RealSense\").")
 end
 include(depsjl_path)
 
 # Module initialization function
 function __init__()
-    # Always check your dependencies from `deps.jl`
     check_deps()
 end
 
