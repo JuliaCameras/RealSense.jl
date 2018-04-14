@@ -11,7 +11,6 @@ include(joinpath(@__DIR__, "..", "deps", "version.jl"))
     if lib == ""
         error("Couldn't find realsense2.dll in the path $WINDOWS_DLL_DIR. Please install Intel RealSense SDK 2.0 and then run Pkg.build(\"RealSense\").")
     else
-        # version check
         const librealsense = Libdl.dlpath(lib) |> x->replace(x, "\\", "\\\\")
     end
 end
@@ -24,7 +23,7 @@ end
     # try to find the lib
     lib = Libdl.find_library(["librealsense2"], locations)
     if lib == ""
-        warn("Couldn't find librealsense2.dylib in the path $MACOS_LIB_DIR. Atempting install locally.")
+        warn("Couldn't find librealsense2.dylib in the path $MACOS_LIB_DIR. Attempting to install Intel RealSense SDK 2.0 locally.")
         # clone SDK source code locally
         librealsenseDIR = joinpath(@__DIR__, "librealsense")
         if !isdir(librealsenseDIR)
@@ -35,7 +34,7 @@ end
         end
         # install dependencies
         if success(`$HOMEBREW list`)
-            info("Atempting install SDK via homebrew...")
+            info("Attempting to install Intel RealSense SDK 2.0 via homebrew...")
             !success(`$HOMEBREW ls libusb`) && run(`$HOMEBREW install libusb`)
             !success(`$HOMEBREW ls pkg-config`) && run(`$HOMEBREW install pkg-config`)
             !success(`$HOMEBREW ls glfw`) && run(`$HOMEBREW install glfw`)
@@ -64,15 +63,15 @@ end
 
 open(joinpath(@__DIR__, "deps.jl"), "w") do f
     println(f, """
-    const librealsense = "$librealsense"
+    const librealsense2 = "$librealsense"
     function check_deps()
-        global librealsense
-        if !isfile(librealsense)
-            error("\$(librealsense) does not exist, Please re-run Pkg.build(\\"RealSense\\"), and restart Julia.")
+        global librealsense2
+        if !isfile(librealsense2)
+            error("\$(librealsense2) does not exist, Please re-run Pkg.build(\\"RealSense\\"), and restart Julia.")
         end
 
-        if Libdl.dlopen_e(librealsense) == C_NULL
-            error("\$(librealsense) cannot be opened, Please re-run Pkg.build(\\"RealSense\\"), and restart Julia.")
+        if Libdl.dlopen_e(librealsense2) == C_NULL
+            error("\$(librealsense2) cannot be opened, Please re-run Pkg.build(\\"RealSense\\"), and restart Julia.")
         end
     end
     """)
