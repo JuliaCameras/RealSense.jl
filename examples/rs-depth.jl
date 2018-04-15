@@ -1,24 +1,4 @@
-# RealSense
-
-[![Build Status](https://travis-ci.org/Gnimuc/RealSense.jl.svg?branch=master)](https://travis-ci.org/Gnimuc/RealSense.jl)
-
-[![Build status](https://ci.appveyor.com/api/projects/status/uxuto8uj4maq9vj6?svg=true)](https://ci.appveyor.com/project/Gnimuc/realsense-jl)
-
-[![codecov](https://codecov.io/gh/Gnimuc/RealSense.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/Gnimuc/RealSense.jl)
-
-[![Coverage Status](https://coveralls.io/repos/github/Gnimuc/RealSense.jl/badge.svg)](https://coveralls.io/github/Gnimuc/RealSense.jl)
-
-Julia wrapper for [Intel RealSense SDK](https://github.com/IntelRealSense/librealsense), a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300). This package is a binding to [the C API of librealsense](https://github.com/IntelRealSense/librealsense/tree/master/include/librealsense2/h) which is very low-level. The target users are those who would like to write their own abstraction layers from the scratch. If you're looking for an easy to use high-level API, you might be interested in [RealSenseAbstraction.jl](https://github.com/Gnimuc/RealSenseAbstraction.jl).
-
-## Installation
-```julia
-Pkg.add("RealSense")
-```
-
-## Usage
-The interface is exactly the same as librealsense's C API. The example below is translated from [librealsense/examples/C/depth/rs-depth.c](https://github.com/IntelRealSense/librealsense/blob/master/examples/C/depth/rs-depth.c). The code is very similar to C, but it's more concise and convenient to work with multi-way arrays in Julia.
-
-```julia
+# this example is translated from https://github.com/IntelRealSense/librealsense/blob/master/examples/C/depth/rs-depth.c
 using RealSense
 using Images
 
@@ -88,7 +68,6 @@ function get_depth_unit_value(dev)
 end
 
 
-## main
 err = Ref{Ptr{rs2_error}}(0)
 
 # create context
@@ -169,4 +148,3 @@ rs2_delete_pipeline(pipeline)
 rs2_delete_device(dev)
 rs2_delete_device_list(device_list)
 rs2_delete_context(ctx)
-```
