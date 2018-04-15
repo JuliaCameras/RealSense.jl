@@ -5,12 +5,10 @@ environment:
   - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x86/julia-latest-win32.exe"
   - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x64/julia-latest-win64.exe"
 
-## uncomment the following lines to allow failures on nightly julia
-## (tests will run but not make your overall status red)
-#matrix:
-#  allow_failures:
-#  - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x86/julia-latest-win32.exe"
-#  - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x64/julia-latest-win64.exe"
+matrix:
+ allow_failures:
+ - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x86/julia-latest-win32.exe"
+ - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x64/julia-latest-win64.exe"
 
 branches:
   only:
@@ -36,6 +34,13 @@ install:
         "C:\projects\julia-binary.exe")
 # Run installer silently, output to C:\projects\julia
   - C:\projects\julia-binary.exe /S /D=C:\projects\julia
+
+# Install IntelRealSense SDK
+  - ps: (new-object net.webclient).DownloadFile(
+        "https://github.com/IntelRealSense/librealsense/releases/download/v2.10.2/Intel.RealSense.SDK.exe",
+        "C:\projects\Intel.RealSense.SDK.exe")
+
+  - C:\projects\Intel.RealSense.SDK.exe /SILENT
 
 build_script:
 # Need to convert from shallow to complete for Pkg.clone to work
