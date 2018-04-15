@@ -2,8 +2,9 @@ include(joinpath(@__DIR__, "..", "deps", "version.jl"))
 
 @static if is_windows()
     info("This package assumes you've already installed Intel RealSense SDK 2.0 on Windows.")
-    const WINDOWS_SDK_DIR = joinpath(homedir(), "..", "..", "Program Files (x86)") |> normpath
-    const WINDOWS_DEFAULT_DIR = joinpath(WINDOWS_SDK_DIR, "Intel RealSense SDK 2.0", "bin", "x$(Sys.WORD_SIZE)")
+    const ROOT = joinpath(homedir(), "..", "..") |> normpath
+    const WINDOWS_SDK_DIR = Sys.WORD_SIZE == 64 ? joinpath(ROOT, "Program Files (x86)") : joinpath(ROOT, "Program Files")
+    const WINDOWS_DEFAULT_DIR = Sys.WORD_SIZE == 64 ? joinpath(WINDOWS_SDK_DIR, "Intel RealSense SDK 2.0", "bin", "x64") : joinpath(WINDOWS_SDK_DIR, "Intel RealSense SDK 2.0", "bin", "x86")
     # possible shared library locations, you could also add yours if you installed the SDK in other place
     locations = [WINDOWS_DEFAULT_DIR]
     # try to find the lib
