@@ -2,35 +2,14 @@
 using RealSense
 using Images
 
-const STREAM            = RS2_STREAM_DEPTH      # rs2_stream is a types of data provided by RealSense device
-const FORMAT            = RS2_FORMAT_Z16        # rs2_format is identifies how binary data is encoded within a frame
-const WIDTH             = 640                   # defines the number of columns for each frame
-const HEIGHT            = 480                   # defines the number of lines for each frame
-const FPS               = 30                    # defines the rate of frames per second
-const STREAM_INDEX      = 0                     # defines the stream index, used for multiple streams of the same type
+include("rs-utils.jl")
 
-function check_error(err)
-    if err[] != C_NULL
-        funcname = unsafe_string(rs2_get_failed_function(err[]))
-        funcargs = unsafe_string(rs2_get_failed_args(err[]))
-        message = unsafe_string(rs2_get_error_message(err[]))
-        println("rs_error was raised when calling $funcname($funcargs):")
-        println("    $message")
-    end
-end
-
-function print_device_info(dev)
-    err = Ref{Ptr{rs2_error}}(0)
-    device_info = unsafe_string(rs2_get_device_info(dev, RS2_CAMERA_INFO_NAME, err))
-    println("\nUsing device 0, an $device_info")
-    check_error(err)
-    device_info = unsafe_string(rs2_get_device_info(dev, RS2_CAMERA_INFO_SERIAL_NUMBER, err))
-    println("    Serial number: $device_info")
-    check_error(err)
-    device_info = unsafe_string(rs2_get_device_info(dev, RS2_CAMERA_INFO_FIRMWARE_VERSION, err))
-    println("    Firmware version: $device_info")
-    check_error(err)
-end
+STREAM        = RS2_STREAM_DEPTH  # rs2_stream is a types of data provided by RealSense device
+FORMAT        = RS2_FORMAT_Z16    # rs2_format is identifies how binary data is encoded within a frame
+WIDTH         = 640               # defines the number of columns for each frame
+HEIGHT        = 480               # defines the number of lines for each frame
+FPS           = 30                # defines the rate of frames per second
+STREAM_INDEX  = 0                 # defines the stream index, used for multiple streams of the same type
 
 # the number of meters represented by a single depth unit
 function get_depth_unit_value(dev)
@@ -105,37 +84,43 @@ check_error(err)
 pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, err)
 @assert err[] == C_NULL "The connected device doesn't support depth streaming!"
 
-frames = rs2_pipeline_wait_for_frames(pipeline, 5000, err)
-check_error(err)
 
-# returns the number of frames embedded within the composite frame
-num_of_frames = rs2_embedded_frames_count(frames, err)
-check_error(err)
-
-imgDepth = zeros(UInt16, WIDTH, HEIGHT)
-for i = 0:num_of_frames-1
-    # the retunred object should be released with rs2_release_frame(...)
-    frame = rs2_extract_frame(frames, i, err)
+pixels = collect(" .,'`^:;lI!i<>~+-?[]{}1|()*oawmzcvunxrhkbdpqjftLCJUO0QYX%B8&WM#Z@")
+while true
+    frames = rs2_pipeline_wait_for_frames(pipeline, 5000, err)
     check_error(err)
 
-    # check if the given frame can be extended to depth frame interface
-    # accept only depth frames and skip other frames
-    0 == rs2_is_frame_extendable_to(frame, RS2_EXTENSION_DEPTH_FRAME, err) && continue
-
-    # retrieve depth data, configured as 16-bit depth values
-    depth_frame_data = Ptr{UInt16}(rs2_get_frame_data(frame, err))
+    # returns the number of frames embedded within the composite frame
+    num_of_frames = rs2_embedded_frames_count(frames, err)
     check_error(err)
-    imgDepth = unsafe_wrap(Array, depth_frame_data, (WIDTH,HEIGHT))
 
-    rs2_release_frame(frame)
+    for i = 0:num_of_frames-1
+        # the retunred object should be released with rs2_release_frame(...)
+        frame = rs2_extract_frame(frames, i, err)
+        check_error(err)
+
+        # check if the given frame can be extended to depth frame interface
+        # accept only depth frames and skip other frames
+        0 == rs2_is_frame_extendable_to(frame, RS2_EXTENSION_DEPTH_FRAME, err) && continue
+
+        # retrieve depth data, configured as 16-bit depth values
+        depth_frame_data = Ptr{UInt16}(rs2_get_frame_data(frame, err))
+        check_error(err)
+
+        # manipulate data
+        depth_image_raw = unsafe_wrap(Array, depth_frame_data, (WIDTH,HEIGHT))
+        img = imresize(depth_image_raw, (80,60))
+        buffer = fill('\n', (81,60))
+        for y = 1:60, x = 1:80
+            pixel_index = Int(img[x,y] ÷ ceil(maximum(img) / 64) + 1)
+            buffer[x,y] = pixels[pixel_index]
+        end
+        print(string(buffer...))
+        
+        rs2_release_frame(frame)
+    end
+    rs2_release_frame(frames)
 end
-
-rs2_release_frame(frames)
-
-# show image
-imgDepth[imgDepth .≥ one_meter] = 0
-imgDepth = imgDepth.'
-colorview(Gray, imgDepth .|> x->x/maximum(x))
 
 # stop the pipeline streaming
 rs2_pipeline_stop(pipeline, err)
