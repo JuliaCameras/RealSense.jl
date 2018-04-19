@@ -1,4 +1,5 @@
-# this example is translated from https://github.com/IntelRealSense/librealsense/blob/master/examples/C/depth/rs-depth.c
+# this example is translated and tweaked from the following link:
+# https://github.com/IntelRealSense/librealsense/blob/master/examples/C/depth/rs-depth.c
 using RealSense
 using Images
 
@@ -116,7 +117,7 @@ while true
             buffer[x,y] = pixels[pixel_index]
         end
         print(string(buffer...))
-        
+
         rs2_release_frame(frame)
     end
     rs2_release_frame(frames)

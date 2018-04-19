@@ -1,37 +1,16 @@
-# this example is translated from https://github.com/IntelRealSense/librealsense/blob/master/examples/C/distance/rs-distance.c
+# this example is translated and tweaked from the following link:
+# https://github.com/IntelRealSense/librealsense/blob/master/examples/C/distance/rs-distance.c
 using RealSense
 using Images
 
-const STREAM            = RS2_STREAM_DEPTH      # rs2_stream is a types of data provided by RealSense device
-const FORMAT            = RS2_FORMAT_Z16        # rs2_format is identifies how binary data is encoded within a frame
-const WIDTH             = 640                   # defines the number of columns for each frame
-const HEIGHT            = 480                   # defines the number of lines for each frame
-const FPS               = 30                    # defines the rate of frames per second
-const STREAM_INDEX      = 0                     # defines the stream index, used for multiple streams of the same type
+include("rs-utils.jl")
 
-function check_error(err)
-    if err[] != C_NULL
-        funcname = unsafe_string(rs2_get_failed_function(err[]))
-        funcargs = unsafe_string(rs2_get_failed_args(err[]))
-        message = unsafe_string(rs2_get_error_message(err[]))
-        println("rs_error was raised when calling $funcname($funcargs):")
-        println("    $message")
-    end
-end
-
-function print_device_info(dev)
-    err = Ref{Ptr{rs2_error}}(0)
-    device_info = unsafe_string(rs2_get_device_info(dev, RS2_CAMERA_INFO_NAME, err))
-    println("\nUsing device 0, an $device_info")
-    check_error(err)
-    device_info = unsafe_string(rs2_get_device_info(dev, RS2_CAMERA_INFO_SERIAL_NUMBER, err))
-    println("    Serial number: $device_info")
-    check_error(err)
-    device_info = unsafe_string(rs2_get_device_info(dev, RS2_CAMERA_INFO_FIRMWARE_VERSION, err))
-    println("    Firmware version: $device_info")
-    check_error(err)
-end
-
+STREAM        = RS2_STREAM_DEPTH  # rs2_stream is a types of data provided by RealSense device
+FORMAT        = RS2_FORMAT_Z16    # rs2_format is identifies how binary data is encoded within a frame
+WIDTH         = 640               # defines the number of columns for each frame
+HEIGHT        = 480               # defines the number of lines for each frame
+FPS           = 30                # defines the rate of frames per second
+STREAM_INDEX  = 0                 # defines the stream index, used for multiple streams of the same type
 
 err = Ref{Ptr{rs2_error}}(0)
 
@@ -67,38 +46,39 @@ check_error(err)
 pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, err)
 @assert err[] == C_NULL "The connected device doesn't support depth streaming!"
 
-frames = rs2_pipeline_wait_for_frames(pipeline, 5000, err)
-check_error(err)
-
-# returns the number of frames embedded within the composite frame
-num_of_frames = rs2_embedded_frames_count(frames, err)
-check_error(err)
-
-imgDepth = zeros(UInt16, WIDTH, HEIGHT)
-for i = 0:num_of_frames-1
-    # the retunred object should be released with rs2_release_frame(...)
-    frame = rs2_extract_frame(frames, i, err)
+while true
+    frames = rs2_pipeline_wait_for_frames(pipeline, 5000, err)
     check_error(err)
 
-    # check if the given frame can be extended to depth frame interface
-    # accept only depth frames and skip other frames
-    0 == rs2_is_frame_extendable_to(frame, RS2_EXTENSION_DEPTH_FRAME, err) && continue
-
-    # retrieve depth frame's dimensions
-    width = rs2_get_frame_width(frame, err)
-    check_error(err)
-    height = rs2_get_frame_height(frame, err)
+    # returns the number of frames embedded within the composite frame
+    num_of_frames = rs2_embedded_frames_count(frames, err)
     check_error(err)
 
-    dist_to_center = rs2_depth_frame_get_distance(frame, width/2, height/2, err)
-    check_error(err)
+    imgDepth = zeros(UInt16, WIDTH, HEIGHT)
+    for i = 0:num_of_frames-1
+        # the retunred object should be released with rs2_release_frame(...)
+        frame = rs2_extract_frame(frames, i, err)
+        check_error(err)
 
-    println("The camera is facing an object $dist_to_center meters away.")
+        # check if the given frame can be extended to depth frame interface
+        # accept only depth frames and skip other frames
+        0 == rs2_is_frame_extendable_to(frame, RS2_EXTENSION_DEPTH_FRAME, err) && continue
 
-    rs2_release_frame(frame)
+        # retrieve depth frame's dimensions
+        width = rs2_get_frame_width(frame, err)
+        check_error(err)
+        height = rs2_get_frame_height(frame, err)
+        check_error(err)
+
+        dist_to_center = rs2_depth_frame_get_distance(frame, width/2, height/2, err)
+        check_error(err)
+
+        println("The camera is facing an object $dist_to_center meters away.")
+
+        rs2_release_frame(frame)
+    end
+    rs2_release_frame(frames)
 end
-
-rs2_release_frame(frames)
 
 # stop the pipeline streaming
 rs2_pipeline_stop(pipeline, err)
