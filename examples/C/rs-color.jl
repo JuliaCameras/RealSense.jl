@@ -1,7 +1,6 @@
 # this example is translated and tweaked from the following link:
 # https://github.com/IntelRealSense/librealsense/blob/master/examples/C/depth/rs-color.c
 using RealSense
-using Images
 
 include("rs-utils.jl")
 
