@@ -70,7 +70,7 @@ print_device_info(dev)
 one_meter = round(UInt16, 1.0 / get_depth_unit_value(dev))
 
 # create pipeline
-pipeline = rs2_create_pipeline(ctx, err)
+_pipeline = rs2_create_pipeline(ctx, err)
 check_error(err)
 
 # create a config instance
@@ -82,13 +82,13 @@ rs2_config_enable_stream(config, STREAM, STREAM_INDEX, WIDTH, HEIGHT, FORMAT, FP
 check_error(err)
 
 # start the pipeline streaming
-pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, err)
+pipeline_profile = rs2_pipeline_start_with_config(_pipeline, config, err)
 @assert err[] == C_NULL "The connected device doesn't support depth streaming!"
 
 
 pixels = collect(" .,'`^:;lI!i<>~+-?[]{}1|()*oawmzcvunxrhkbdpqjftLCJUO0QYX%B8&WM#Z@")
 while true
-    frames = rs2_pipeline_wait_for_frames(pipeline, 5000, err)
+    frames = rs2_pipeline_wait_for_frames(_pipeline, 5000, err)
     check_error(err)
 
     # returns the number of frames embedded within the composite frame
@@ -124,13 +124,13 @@ while true
 end
 
 # stop the pipeline streaming
-rs2_pipeline_stop(pipeline, err)
+rs2_pipeline_stop(_pipeline, err)
 check_error(err)
 
 # release resources
 rs2_delete_pipeline_profile(pipeline_profile)
 rs2_delete_config(config)
-rs2_delete_pipeline(pipeline)
+rs2_delete_pipeline(_pipeline)
 rs2_delete_device(dev)
 rs2_delete_device_list(device_list)
 rs2_delete_context(ctx)

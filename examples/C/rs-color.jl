@@ -31,7 +31,7 @@ dev = rs2_create_device(device_list, 0, err)
 print_device_info(dev)
 
 # create pipeline
-pipeline = rs2_create_pipeline(ctx, err)
+_pipeline = rs2_create_pipeline(ctx, err)
 check_error(err)
 
 # create a config instance
@@ -43,11 +43,11 @@ rs2_config_enable_stream(config, STREAM, STREAM_INDEX, WIDTH, HEIGHT, FORMAT, FP
 check_error(err)
 
 # start the pipeline streaming
-pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, err)
+pipeline_profile = rs2_pipeline_start_with_config(_pipeline, config, err)
 @assert err[] == C_NULL "The connected device doesn't support color streaming!"
 
 while true
-    frames = rs2_pipeline_wait_for_frames(pipeline, 5000, err)
+    frames = rs2_pipeline_wait_for_frames(_pipeline, 5000, err)
     check_error(err)
 
     # returns the number of frames embedded within the composite frame
@@ -59,10 +59,10 @@ while true
         frame = rs2_extract_frame(frames, i, err)
         check_error(err)
 
-        # retrieve depth data, configured as 16-bit depth values
+        # retrieve rgb data
         rgb_frame_data = Ptr{UInt8}(rs2_get_frame_data(frame, err))
         check_error(err)
-        rgb_image_raw = unsafe_wrap(Array, rgb_frame_data, (WIDTH,HEIGHT))
+        rgb_image_raw = unsafe_wrap(Array, rgb_frame_data, 3*WIDTH*HEIGHT)
 
         frame_number = rs2_get_frame_number(frame, err)
         check_error(err)
@@ -89,13 +89,13 @@ while true
 end
 
 # stop the pipeline streaming
-rs2_pipeline_stop(pipeline, err)
+rs2_pipeline_stop(_pipeline, err)
 check_error(err)
 
 # release resources
 rs2_delete_pipeline_profile(pipeline_profile)
 rs2_delete_config(config)
-rs2_delete_pipeline(pipeline)
+rs2_delete_pipeline(_pipeline)
 rs2_delete_device(dev)
 rs2_delete_device_list(device_list)
 rs2_delete_context(ctx)
