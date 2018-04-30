@@ -81,6 +81,10 @@ check_error(err)
 rs2_config_enable_stream(config, STREAM, STREAM_INDEX, WIDTH, HEIGHT, FORMAT, FPS, err)
 check_error(err)
 
+# we sleep 1s here, otherwise it will hit issue #1586:
+# https://github.com/IntelRealSense/librealsense/issues/1586
+sleep(1)
+
 # start the pipeline streaming
 pipeline_profile = rs2_pipeline_start_with_config(_pipeline, config, err)
 @assert err[] == C_NULL "The connected device doesn't support depth streaming!"

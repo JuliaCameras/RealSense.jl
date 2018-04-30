@@ -70,6 +70,9 @@ dev = rs2_create_device(device_list, 0, err)
 deviceinfo(dev)
 _pipeline = rs2_create_pipeline(ctx, err)
 checkerror(err)
+
+# we sleep 1s here, otherwise it will hit issue #1586:
+# https://github.com/IntelRealSense/librealsense/issues/1586
 sleep(1)
 
 # start the pipeline streaming
