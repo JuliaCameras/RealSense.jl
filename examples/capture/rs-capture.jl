@@ -70,6 +70,7 @@ dev = rs2_create_device(device_list, 0, err)
 deviceinfo(dev)
 _pipeline = rs2_create_pipeline(ctx, err)
 checkerror(err)
+sleep(1)
 
 # start the pipeline streaming
 pipeline_profile = rs2_pipeline_start(_pipeline, err)
@@ -77,6 +78,12 @@ pipeline_profile = rs2_pipeline_start(_pipeline, err)
 
 # create Depth-Colorizer processing block that can be used to quickly visualize the depth data
 color_map = rs2_create_colorizer(err)
+checkerror(err)
+# create target output queue for the results
+frame_queue = rs2_create_frame_queue(1, err)
+checkerror(err)
+# set the output of the processing block to be the queue
+rs2_start_processing_queue(color_map, frame_queue, err)
 checkerror(err)
 
 # OpenGL rendering loop
@@ -106,23 +113,26 @@ while !GLFW.WindowShouldClose(window)
         checkerror(err)
         # select stream
         if stream[] == RS2_STREAM_DEPTH
-            # # colorize the depth data
-            # rs2_process_frame(color_map, frame, err)
-            # checkerror(err)
-            # # get data
-            # depth_data = Ptr{UInt8}(rs2_get_frame_data(frame, err))
-            # checkerror(err)
-            # width = rs2_get_frame_width(frame, err)
-            # height = rs2_get_frame_height(frame, err)
-            # glBindTexture(GL_TEXTURE_2D, depthTex[])
-            # glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, depth_data)
-            # glGenerateMipmap(GL_TEXTURE_2D)
-            # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-            # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-            # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-            # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-            # glBindVertexArray(depthVAO[])
-            # glDrawArrays(GL_TRIANGLES, 0, 6)
+            # frame reference is being "moved" into processing, so unless you
+            # don't need frame anymore you must add an extra rs2_frame_add_ref
+            rs2_frame_add_ref(frame, err)
+            checkerror(err)
+            # invoke processing
+            rs2_process_frame(color_map, frame, err)
+            checkerror(err)
+            colorized_frame = rs2_wait_for_frame(frame_queue, 5000, err)
+            checkerror(err)
+            # get data
+            depth_data = Ptr{UInt8}(rs2_get_frame_data(colorized_frame, err))
+            checkerror(err)
+            width = rs2_get_frame_width(frame, err)
+            height = rs2_get_frame_height(frame, err)
+            glBindTexture(GL_TEXTURE_2D, depthTex[])
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, depth_data)
+            mipmap()
+            glBindVertexArray(depthVAO[])
+            glDrawArrays(GL_TRIANGLES, 0, 6)
+            rs2_release_frame(colorized_frame)
         elseif stream[] == RS2_STREAM_COLOR
             rgb_data = Ptr{UInt8}(rs2_get_frame_data(frame, err))
             checkerror(err)
@@ -130,11 +140,7 @@ while !GLFW.WindowShouldClose(window)
             height = rs2_get_frame_height(frame, err)
             glBindTexture(GL_TEXTURE_2D, rgbTex[])
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb_data)
-            glGenerateMipmap(GL_TEXTURE_2D)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+            mipmap()
             glBindVertexArray(rgbVAO[])
             glDrawArrays(GL_TRIANGLES, 0, 6)
         end
@@ -153,6 +159,7 @@ rs2_pipeline_stop(_pipeline, err)
 checkerror(err)
 
 # release rs2 resources
+rs2_delete_frame_queue(frame_queue)
 rs2_delete_processing_block(color_map)
 rs2_delete_pipeline_profile(pipeline_profile)
 rs2_delete_pipeline(_pipeline)
