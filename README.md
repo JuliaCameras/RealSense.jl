@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/gh/Gnimuc/RealSense.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/Gnimuc/RealSense.jl)
 [![Coverage Status](https://coveralls.io/repos/github/Gnimuc/RealSense.jl/badge.svg)](https://coveralls.io/github/Gnimuc/RealSense.jl)
 
-Julia wrapper for [Intel RealSense SDK](https://github.com/IntelRealSense/librealsense), a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300). This package is a binding to [the C API of librealsense](https://github.com/IntelRealSense/librealsense/tree/master/include/librealsense2/h) which is very low-level. The target users are those who would like to write their own abstraction layers from the scratch. If you're looking for an easy to use high-level API, you might be interested in [RealSenseAbstraction.jl](https://github.com/Gnimuc/RealSenseAbstraction.jl).
+Julia wrapper for [Intel RealSense SDK](https://github.com/IntelRealSense/librealsense), a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300). This package is a binding to [the C API of librealsense](https://github.com/IntelRealSense/librealsense/tree/master/include/librealsense2/h) which is very low-level. The target users are those who would like to start writing their own abstraction layers from scratch. If you're looking for an easy to use high-level API, you might be interested in [RealSenseAbstraction.jl](https://github.com/Gnimuc/RealSenseAbstraction.jl).
 
 ## Installation
 ```julia
@@ -15,7 +15,7 @@ Pkg.add("RealSense")
 ## Usage
 The interface is exactly the same as librealsense's C API. The example below is translated from [here](https://github.com/IntelRealSense/librealsense/blob/master/examples/C/depth/rs-depth.c).
 The Julia code is very similar to C, but it's more concise and convenient to work with arrays
-and other high-level packages.
+and other high-level packages. Other examples can be found in the `examples` folder.
 ```julia
 using RealSense
 using Images

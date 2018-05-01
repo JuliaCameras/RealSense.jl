@@ -31,7 +31,7 @@ end
 
 let previousTime = time()
     frameCount = 0
-    global function updatefps(window::GLFW.Window)
+    global function updatefps!(window::GLFW.Window)
         currentTime = time()
         elapsedTime = currentTime - previousTime
         if elapsedTime > 0.25
