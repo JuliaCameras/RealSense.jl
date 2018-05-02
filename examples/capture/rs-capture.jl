@@ -66,8 +66,6 @@ checkerror(err)
 dev_count = rs2_get_device_count(device_list, err)
 checkerror(err)
 @info "There are $dev_count connected RealSense devices."
-dev = rs2_create_device(device_list, 0, err)
-deviceinfo(dev)
 _pipeline = rs2_create_pipeline(ctx, err)
 checkerror(err)
 
@@ -166,7 +164,6 @@ rs2_delete_frame_queue(frame_queue)
 rs2_delete_processing_block(color_map)
 rs2_delete_pipeline_profile(pipeline_profile)
 rs2_delete_pipeline(_pipeline)
-rs2_delete_device(dev)
 rs2_delete_device_list(device_list)
 rs2_delete_context(ctx)
 
