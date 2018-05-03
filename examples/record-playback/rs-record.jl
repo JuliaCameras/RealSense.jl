@@ -170,6 +170,7 @@ while !GLFW.WindowShouldClose(window)
         rs2_pipeline_stop(_pipeline, err)
         checkerror(err)
         rs2_delete_pipeline_profile(pipeline_profile)
+        rs2_delete_config(config)
         rs2_delete_pipeline(_pipeline)
         rs2_delete_device(dev)
         @info "Recording stopped."
@@ -177,13 +178,10 @@ while !GLFW.WindowShouldClose(window)
         _pipeline = rs2_create_pipeline(ctx, err)
         checkerror(err)
         # start the default pipeline
-        # pipeline_profile = rs2_pipeline_get_active_profile(_pipeline, err)
-        # checkerror(err)
-        sleep(1)
-        @show "before"
+        # `sleep(1)` won't work on MacOS, see issue #1586:
+        # https://github.com/IntelRealSense/librealsense/issues/1586
         pipeline_profile = rs2_pipeline_start(_pipeline, err)
         checkerror(err)
-        @show "after"
         dev = rs2_pipeline_profile_get_device(pipeline_profile, err)
         checkerror(err)
         recording = false
