@@ -30,3 +30,23 @@ function deviceinfo(dev)
     checkerror(err)
     @info "  Product ID: $(unsafe_string(device_info))"
 end
+
+function get_depth_frame(frames)
+    # get the number of frames embedded within the composite frame
+    num_of_frames = rs2_embedded_frames_count(frames, err)
+    checkerror(err)
+    for i = 0:num_of_frames-1
+        # extract frame
+        frame = rs2_extract_frame(frames, i, err)
+        checkerror(err)
+        # extract stream profile
+        profile = rs2_get_frame_stream_profile(frame, err)
+        checkerror(err)
+        stream, format = Ref{rs2_stream}(0), Ref{rs2_format}(0)
+        index, unique_id, framerate = Ref{Cint}(0), Ref{Cint}(0), Ref{Cint}(0)
+        rs2_get_stream_profile_data(profile, stream, format, index, unique_id, framerate, err)
+        checkerror(err)
+        stream[] == RS2_STREAM_DEPTH && return frame
+    end
+    return C_NULL
+end

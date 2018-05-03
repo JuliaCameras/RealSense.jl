@@ -5,3 +5,5 @@
 deps/librealsense
 deps/deps.jl
 gen/librealsense
+
+*.bag

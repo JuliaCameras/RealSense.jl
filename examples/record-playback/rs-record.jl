@@ -76,6 +76,8 @@ rs2_start_processing_queue(color_map, frame_queue, err)
 checkerror(err)
 
 # OpenGL rendering loop
+recording = false
+pause_flag = false
 while !GLFW.WindowShouldClose(window)
     updatefps!(window)
     # clear drawing surface
@@ -83,59 +85,112 @@ while !GLFW.WindowShouldClose(window)
     glViewport(0, 0, glfwWidth, glfwHeight)
     glUseProgram(shaderProgramID)
 
-    # wait next frame set
+    # wait next frame set and extract depth frame
     frames = rs2_pipeline_wait_for_frames(_pipeline, 5000, err)
     checkerror(err)
-    # get the number of frames embedded within the composite frame
-    num_of_frames = rs2_embedded_frames_count(frames, err)
-    checkerror(err)
-    for i = 0:num_of_frames-1
-        # extract frame
-        frame = rs2_extract_frame(frames, i, err)
+    depth_frame = get_depth_frame(frames)
+    # select stream
+    if depth_frame != C_NULL
+        # frame reference is being "moved" into processing, so unless you
+        # don't need frame anymore you must add an extra rs2_frame_add_ref
+        rs2_frame_add_ref(depth_frame, err)
         checkerror(err)
-        # extract stream profile
-        profile = rs2_get_frame_stream_profile(frame, err)
+        # invoke processing
+        rs2_process_frame(color_map, depth_frame, err)
         checkerror(err)
-        stream, format = Ref{rs2_stream}(0), Ref{rs2_format}(0)
-        index, unique_id, framerate = Ref{Cint}(0), Ref{Cint}(0), Ref{Cint}(0)
-        rs2_get_stream_profile_data(profile, stream, format, index, unique_id, framerate, err)
+        colorized_frame = rs2_wait_for_frame(frame_queue, 5000, err)
         checkerror(err)
-        # select stream
-        if stream[] == RS2_STREAM_DEPTH
-            # frame reference is being "moved" into processing, so unless you
-            # don't need frame anymore you must add an extra rs2_frame_add_ref
-            rs2_frame_add_ref(frame, err)
-            checkerror(err)
-            # invoke processing
-            rs2_process_frame(color_map, frame, err)
-            checkerror(err)
-            colorized_frame = rs2_wait_for_frame(frame_queue, 5000, err)
-            checkerror(err)
-            # get data
-            depth_data = Ptr{UInt8}(rs2_get_frame_data(colorized_frame, err))
-            checkerror(err)
-            width = rs2_get_frame_width(frame, err)
-            height = rs2_get_frame_height(frame, err)
-            glBindTexture(GL_TEXTURE_2D, tex[])
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, depth_data)
-            mipmap()
-            glBindVertexArray(vao[])
-            glDrawArrays(GL_TRIANGLES, 0, 6)
-            rs2_release_frame(colorized_frame)
-        end
+        # get data
+        depth_data = Ptr{UInt8}(rs2_get_frame_data(colorized_frame, err))
+        checkerror(err)
+        width = rs2_get_frame_width(depth_frame, err)
+        height = rs2_get_frame_height(depth_frame, err)
+        glBindTexture(GL_TEXTURE_2D, tex[])
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, depth_data)
+        mipmap()
+        glBindVertexArray(vao[])
+        glDrawArrays(GL_TRIANGLES, 0, 6)
         # release resource
-        rs2_release_frame(frame)
+        rs2_release_frame(colorized_frame)
     end
+    # release resource
+    rs2_release_frame(depth_frame)
     rs2_release_frame(frames)
     # check and call events
     GLFW.PollEvents()
+    # press R to start recording
+    if GLFW.GetKey(window, GLFW.KEY_R) && !recording
+        # can current device be used as a record device?
+        is_extendable = rs2_is_device_extendable_to(dev, RS2_EXTENSION_RECORD, err)
+        checkerror(err)
+        if is_extendable == 0
+            @info "Start recording..."
+            # stop the pipeline streaming and release resource
+            rs2_pipeline_stop(_pipeline, err)
+            checkerror(err)
+            rs2_delete_pipeline_profile(pipeline_profile)
+            rs2_delete_pipeline(_pipeline)
+            rs2_delete_device(dev)
+            # start a new pipleine for recording
+            _pipeline = rs2_create_pipeline(ctx, err)
+            checkerror(err)
+            # declare a new configuration
+            config = rs2_create_config(err)
+            checkerror(err)
+            rs2_config_enable_record_to_file(config, joinpath(@__DIR__, "a.bag"), err)
+            checkerror(err)
+            # start recording pipeline
+            rs2_pipeline_start_with_config(_pipeline, config, err)  # file will be opened at this point
+            checkerror(err)
+            @assert err[] == C_NULL "Failed to start recording pipeline!"
+            pipeline_profile = rs2_pipeline_get_active_profile(_pipeline, err)
+            checkerror(err)
+            dev = rs2_pipeline_profile_get_device(pipeline_profile, err)
+            checkerror(err)
+            recording = true
+        end
+    end
+    # press P to pause recording
+    if GLFW.GetKey(window, GLFW.KEY_P) && recording
+        @info "Paused"
+        rs2_record_device_pause(dev, err)
+        recording = false
+        pause_flag = true
+    end
+    # press Q to resume recording
+    if GLFW.GetKey(window, GLFW.KEY_Q) && !recording && pause_flag
+        @info "Resumed"
+        rs2_record_device_resume(dev, err)
+        recording = true
+        pause_flag = false
+    end
+    # press F to stop recording
+    if GLFW.GetKey(window, GLFW.KEY_F) && recording
+        # stop the pipeline streaming and release resource
+        rs2_pipeline_stop(_pipeline, err)
+        checkerror(err)
+        rs2_delete_pipeline_profile(pipeline_profile)
+        rs2_delete_pipeline(_pipeline)
+        rs2_delete_device(dev)
+        @info "Recording stopped."
+        # start a new pipleine for recording
+        _pipeline = rs2_create_pipeline(ctx, err)
+        checkerror(err)
+        # start the default pipeline
+        # pipeline_profile = rs2_pipeline_get_active_profile(_pipeline, err)
+        # checkerror(err)
+        sleep(1)
+        @show "before"
+        pipeline_profile = rs2_pipeline_start(_pipeline, err)
+        checkerror(err)
+        @show "after"
+        dev = rs2_pipeline_profile_get_device(pipeline_profile, err)
+        checkerror(err)
+        recording = false
+    end
     # swap the buffers
     GLFW.SwapBuffers(window)
 end
-
-# stop the pipeline streaming
-rs2_pipeline_stop(_pipeline, err)
-checkerror(err)
 
 # release rs2 resources
 rs2_delete_frame_queue(frame_queue)
