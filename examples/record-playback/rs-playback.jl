@@ -40,7 +40,6 @@ shaderProgramID = createprogram(vertSource, fragSource)
 tex = Ref{GLuint}(0)
 glGenTextures(1, tex)
 
-
 # initialize RealSense camera
 err = Ref{Ptr{rs2_error}}(0)
 ctx = rs2_create_context(RS2_API_VERSION, err)
@@ -55,7 +54,7 @@ checkerror(err)
 # start with a playback config
 config = rs2_create_config(err)
 checkerror(err)
-rs2_config_enable_device_from_file(config, joinpath(@__DIR__, "outdoors.bag"), err)
+rs2_config_enable_device_from_file(config, joinpath(@__DIR__, "a.bag"), err)
 checkerror(err)
 # start the pipeline streaming
 @static if is_apple()

@@ -11,8 +11,8 @@ window = create_window_context(glfwWidth, glfwHeight)
 # prepare drawing via OpenGL
 window_frame = GLfloat[-1.0,-1.0,   1.0,-1.0,   1.0, 1.0,
                         1.0, 1.0,  -1.0, 1.0,  -1.0,-1.0]
-vertex_texcoords = GLfloat[1.0,1.0,  0.0,1.0,  0.0,0.0,
-                           0.0,0.0,  1.0,0.0,  1.0,1.0]
+vertex_texcoords = GLfloat[0.0,1.0,  1.0,1.0,  1.0,0.0,
+                           1.0,0.0,  0.0,0.0,  0.0,1.0]
 # create Vertex Buffer Objects
 vbo = Ref{GLuint}(0)
 glGenBuffers(1, vbo)
@@ -125,70 +125,27 @@ while !GLFW.WindowShouldClose(window)
         checkerror(err)
         if is_extendable == 0
             @info "Start recording..."
-            # stop the pipeline streaming and release resource
-            rs2_pipeline_stop(_pipeline, err)
-            checkerror(err)
-            rs2_delete_pipeline_profile(pipeline_profile)
-            rs2_delete_pipeline(_pipeline)
-            rs2_delete_device(dev)
-            # start a new pipleine for recording
-            _pipeline = rs2_create_pipeline(ctx, err)
-            checkerror(err)
-            # declare a new configuration
-            config = rs2_create_config(err)
-            checkerror(err)
-            rs2_config_enable_record_to_file(config, joinpath(@__DIR__, "a.bag"), err)
-            checkerror(err)
-            # start recording pipeline
-            rs2_pipeline_start_with_config(_pipeline, config, err)  # file will be opened at this point
-            checkerror(err)
-            @assert err[] == C_NULL "Failed to start recording pipeline!"
-            pipeline_profile = rs2_pipeline_get_active_profile(_pipeline, err)
-            checkerror(err)
-            dev = rs2_pipeline_profile_get_device(pipeline_profile, err)
+            record_dev = rs2_create_record_device(dev, joinpath(@__DIR__, "a.bag"), err)
             checkerror(err)
             recording = true
         end
     end
     # press P to pause recording
-    if GLFW.GetKey(window, GLFW.KEY_P) && recording
+    if GLFW.GetKey(window, GLFW.KEY_P) && recording && !pause_flag
         @info "Paused"
-        rs2_record_device_pause(dev, err)
-        recording = false
+        rs2_record_device_pause(record_dev, err)
         pause_flag = true
     end
     # press Q to resume recording
-    if GLFW.GetKey(window, GLFW.KEY_Q) && !recording && pause_flag
+    if GLFW.GetKey(window, GLFW.KEY_Q) && recording && pause_flag
         @info "Resumed"
-        rs2_record_device_resume(dev, err)
-        recording = true
+        rs2_record_device_resume(record_dev, err)
         pause_flag = false
     end
     # press F to stop recording
     if GLFW.GetKey(window, GLFW.KEY_F) && recording
-        # stop the pipeline streaming and release resource
-        rs2_pipeline_stop(_pipeline, err)
-        checkerror(err)
-        @static if is_apple()
-            # `sleep(1)` won't work, so we exit directly, see issue #1586:
-            # https://github.com/IntelRealSense/librealsense/issues/1586
-            rs2_delete_config(config)
-            @info "Recording stopped."
-            break
-        end
-        rs2_delete_pipeline_profile(pipeline_profile)
-        rs2_delete_config(config)
-        rs2_delete_pipeline(_pipeline)
-        rs2_delete_device(dev)
+        rs2_delete_device(record_dev)
         @info "Recording stopped."
-        # start a new pipleine for recording
-        _pipeline = rs2_create_pipeline(ctx, err)
-        checkerror(err)
-        # start the default pipeline
-        pipeline_profile = rs2_pipeline_start(_pipeline, err)
-        checkerror(err)
-        dev = rs2_pipeline_profile_get_device(pipeline_profile, err)
-        checkerror(err)
         recording = false
     end
     # swap the buffers
