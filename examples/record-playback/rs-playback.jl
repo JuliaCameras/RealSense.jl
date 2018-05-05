@@ -11,8 +11,8 @@ window = create_window_context(glfwWidth, glfwHeight)
 # prepare drawing via OpenGL
 window_frame = GLfloat[-1.0,-1.0,   1.0,-1.0,   1.0, 1.0,
                         1.0, 1.0,  -1.0, 1.0,  -1.0,-1.0]
-vertex_texcoords = GLfloat[1.0,1.0,  0.0,1.0,  0.0,0.0,
-                           0.0,0.0,  1.0,0.0,  1.0,1.0]
+vertex_texcoords = GLfloat[0.0,1.0,  1.0,1.0,  1.0,0.0,
+                           1.0,0.0,  0.0,0.0,  0.0,1.0]
 # create Vertex Buffer Objects
 vbo = Ref{GLuint}(0)
 glGenBuffers(1, vbo)
@@ -94,11 +94,7 @@ while !GLFW.WindowShouldClose(window)
     has_frames = rs2_pipeline_poll_for_frames(_pipeline, framesRef, err)
     checkerror(err)
     frames = framesRef[]
-    if has_frames == 0
-        rs2_release_frame(frames)
-        # @info "Finished."
-        continue
-    end
+    has_frames == 0 && (rs2_release_frame(frames); continue)
     depth_frame = get_depth_frame(frames)
     # select stream
     if depth_frame != C_NULL
