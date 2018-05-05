@@ -52,16 +52,22 @@ checkerror(err)
 @info "There are $dev_count connected RealSense devices."
 _pipeline = rs2_create_pipeline(ctx, err)
 checkerror(err)
-
-# we sleep 1s here, otherwise it will hit issue #1586:
-# https://github.com/IntelRealSense/librealsense/issues/1586
-sleep(1)
-
+# start with a playback config
+config = rs2_create_config(err)
+checkerror(err)
+rs2_config_enable_device_from_file(config, joinpath(@__DIR__, "outdoors.bag"), err)
+checkerror(err)
 # start the pipeline streaming
-pipeline_profile = rs2_pipeline_start(_pipeline, err)
-@assert err[] == C_NULL "Failed to start pipeline!"
-
-# get the current device
+@static if is_apple()
+    # we sleep 1s on MacOS, otherwise it will hit issue #1586:
+    # https://github.com/IntelRealSense/librealsense/issues/1586
+    sleep(1)
+end
+rs2_pipeline_start_with_config(_pipeline, config, err)
+checkerror(err)
+@assert err[] == C_NULL "Failed to start playback pipeline!"
+pipeline_profile = rs2_pipeline_get_active_profile(_pipeline, err)
+checkerror(err)
 dev = rs2_pipeline_profile_get_device(pipeline_profile, err)
 checkerror(err)
 
@@ -74,7 +80,7 @@ checkerror(err)
 # set the output of the processing block to be the queue
 rs2_start_processing_queue(color_map, frame_queue, err)
 checkerror(err)
-
+@info "Playing back..."
 # OpenGL rendering loop
 while !GLFW.WindowShouldClose(window)
     updatefps!(window)
@@ -83,49 +89,43 @@ while !GLFW.WindowShouldClose(window)
     glViewport(0, 0, glfwWidth, glfwHeight)
     glUseProgram(shaderProgramID)
 
-    # wait next frame set
-    frames = rs2_pipeline_wait_for_frames(_pipeline, 5000, err)
+    # poll next frame set and extract depth frame
+    framesRef = Ref{Ptr{rs2_frame}}(C_NULL)
+    has_frames = rs2_pipeline_poll_for_frames(_pipeline, framesRef, err)
     checkerror(err)
-    # get the number of frames embedded within the composite frame
-    num_of_frames = rs2_embedded_frames_count(frames, err)
-    checkerror(err)
-    for i = 0:num_of_frames-1
-        # extract frame
-        frame = rs2_extract_frame(frames, i, err)
-        checkerror(err)
-        # extract stream profile
-        profile = rs2_get_frame_stream_profile(frame, err)
-        checkerror(err)
-        stream, format = Ref{rs2_stream}(0), Ref{rs2_format}(0)
-        index, unique_id, framerate = Ref{Cint}(0), Ref{Cint}(0), Ref{Cint}(0)
-        rs2_get_stream_profile_data(profile, stream, format, index, unique_id, framerate, err)
-        checkerror(err)
-        # select stream
-        if stream[] == RS2_STREAM_DEPTH
-            # frame reference is being "moved" into processing, so unless you
-            # don't need frame anymore you must add an extra rs2_frame_add_ref
-            rs2_frame_add_ref(frame, err)
-            checkerror(err)
-            # invoke processing
-            rs2_process_frame(color_map, frame, err)
-            checkerror(err)
-            colorized_frame = rs2_wait_for_frame(frame_queue, 5000, err)
-            checkerror(err)
-            # get data
-            depth_data = Ptr{UInt8}(rs2_get_frame_data(colorized_frame, err))
-            checkerror(err)
-            width = rs2_get_frame_width(frame, err)
-            height = rs2_get_frame_height(frame, err)
-            glBindTexture(GL_TEXTURE_2D, tex[])
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, depth_data)
-            mipmap()
-            glBindVertexArray(vao[])
-            glDrawArrays(GL_TRIANGLES, 0, 6)
-            rs2_release_frame(colorized_frame)
-        end
-        # release resource
-        rs2_release_frame(frame)
+    frames = framesRef[]
+    if has_frames == 0
+        rs2_release_frame(frames)
+        # @info "Finished."
+        continue
     end
+    depth_frame = get_depth_frame(frames)
+    # select stream
+    if depth_frame != C_NULL
+        # frame reference is being "moved" into processing, so unless you
+        # don't need frame anymore you must add an extra rs2_frame_add_ref
+        rs2_frame_add_ref(depth_frame, err)
+        checkerror(err)
+        # invoke processing
+        rs2_process_frame(color_map, depth_frame, err)
+        checkerror(err)
+        colorized_frame = rs2_wait_for_frame(frame_queue, 5000, err)
+        checkerror(err)
+        # get data
+        depth_data = Ptr{UInt8}(rs2_get_frame_data(colorized_frame, err))
+        checkerror(err)
+        width = rs2_get_frame_width(depth_frame, err)
+        height = rs2_get_frame_height(depth_frame, err)
+        glBindTexture(GL_TEXTURE_2D, tex[])
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, depth_data)
+        mipmap()
+        glBindVertexArray(vao[])
+        glDrawArrays(GL_TRIANGLES, 0, 6)
+        # release resource
+        rs2_release_frame(colorized_frame)
+    end
+    # release resource
+    rs2_release_frame(depth_frame)
     rs2_release_frame(frames)
     # check and call events
     GLFW.PollEvents()
@@ -133,14 +133,11 @@ while !GLFW.WindowShouldClose(window)
     GLFW.SwapBuffers(window)
 end
 
-# stop the pipeline streaming
-rs2_pipeline_stop(_pipeline, err)
-checkerror(err)
-
 # release rs2 resources
 rs2_delete_frame_queue(frame_queue)
 rs2_delete_processing_block(color_map)
 rs2_delete_pipeline_profile(pipeline_profile)
+rs2_delete_config(config)
 rs2_delete_pipeline(_pipeline)
 rs2_delete_device(dev)
 rs2_delete_device_list(device_list)
