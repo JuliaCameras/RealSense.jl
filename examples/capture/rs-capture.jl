@@ -68,12 +68,12 @@ checkerror(err)
 @info "There are $dev_count connected RealSense devices."
 _pipeline = rs2_create_pipeline(ctx, err)
 checkerror(err)
-
-# we sleep 1s here, otherwise it will hit issue #1586:
-# https://github.com/IntelRealSense/librealsense/issues/1586
-sleep(1)
-
 # start the pipeline streaming
+@static if is_apple()
+    # we sleep 1s on MacOS, otherwise it will hit issue #1586:
+    # https://github.com/IntelRealSense/librealsense/issues/1586
+    sleep(1)
+end
 pipeline_profile = rs2_pipeline_start(_pipeline, err)
 @assert err[] == C_NULL "Failed to start pipeline!"
 

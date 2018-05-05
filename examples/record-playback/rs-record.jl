@@ -52,12 +52,12 @@ checkerror(err)
 @info "There are $dev_count connected RealSense devices."
 _pipeline = rs2_create_pipeline(ctx, err)
 checkerror(err)
-
-# we sleep 1s here, otherwise it will hit issue #1586:
-# https://github.com/IntelRealSense/librealsense/issues/1586
-sleep(1)
-
 # start the pipeline streaming
+@static if is_apple()
+    # we sleep 1s on MacOS, otherwise it will hit issue #1586:
+    # https://github.com/IntelRealSense/librealsense/issues/1586
+    sleep(1)
+end
 pipeline_profile = rs2_pipeline_start(_pipeline, err)
 @assert err[] == C_NULL "Failed to start pipeline!"
 
@@ -169,6 +169,13 @@ while !GLFW.WindowShouldClose(window)
         # stop the pipeline streaming and release resource
         rs2_pipeline_stop(_pipeline, err)
         checkerror(err)
+        @static if is_apple()
+            # `sleep(1)` won't work, so we exit directly, see issue #1586:
+            # https://github.com/IntelRealSense/librealsense/issues/1586
+            rs2_delete_config(config)
+            @info "Recording stopped."
+            break
+        end
         rs2_delete_pipeline_profile(pipeline_profile)
         rs2_delete_config(config)
         rs2_delete_pipeline(_pipeline)
@@ -178,8 +185,6 @@ while !GLFW.WindowShouldClose(window)
         _pipeline = rs2_create_pipeline(ctx, err)
         checkerror(err)
         # start the default pipeline
-        # `sleep(1)` won't work on MacOS, see issue #1586:
-        # https://github.com/IntelRealSense/librealsense/issues/1586
         pipeline_profile = rs2_pipeline_start(_pipeline, err)
         checkerror(err)
         dev = rs2_pipeline_profile_get_device(pipeline_profile, err)
