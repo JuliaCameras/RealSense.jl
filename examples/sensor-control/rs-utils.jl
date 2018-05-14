@@ -130,3 +130,48 @@ function get_a_sensor_from_a_device(device)
     rs2_delete_sensor_list(sensorList)
     return sensor
 end
+
+function choose_a_streaming_profile(sensor)
+    err = Ref{Ptr{rs2_error}}(C_NULL)
+    profileList = rs2_get_stream_profiles(sensor, err)
+    checkerror(err)
+    profileCount = rs2_get_stream_profiles_count(profileList, err)
+    checkerror(err)
+    profiles = []
+    for i = 0:profileCount-1
+        profile = rs2_get_stream_profile(profileList, i, err)
+        checkerror(err)
+        push!(profiles, profile)
+    end
+
+    @info "Sensor provides the following stream profiles:"
+    for (profile_num, profile) in enumerate(profiles)
+        formatRef, typeRef = Ref{rs2_format}(0), Ref{rs2_stream}(0)
+        indexRef, uidRef, framerateRef = Ref{Cint}(0), Ref{Cint}(0), Ref{Cint}(0)
+        rs2_get_stream_profile_data(profile, typeRef, formatRef, indexRef, uidRef, framerateRef, err)
+        checkerror(err)
+        stream_data_type = typeRef[]
+        stream_index = indexRef[]
+        stream_name = unsafe_string(rs2_stream_to_string(stream_data_type))
+        stream_index != 0 && (stream_name = "$stream_name $stream_index";)
+        unique_stream_id = uidRef[]
+        @info "$profile_num: $stream_name | index: $stream_index | id: $unique_stream_id |"
+
+        is_extendable = rs2_stream_profile_is(profile, RS2_EXTENSION_VIDEO_PROFILE, err)
+        checkerror(err)
+        if is_extendable > 0
+            widthRef, heightRef = Ref{Cint}(0), Ref{Cint}(0)
+            rs2_get_video_stream_resolution(profile, widthRef, heightRef, err)
+            width, height = widthRef[], heightRef[]
+            stream_format = formatRef[]
+            stream_fps = framerateRef[]
+            @info "  (Video Stream: $(stream_format) $(width)x$height @$(stream_fps)Hz)"
+        end
+    end
+    @info "Please select the desired streaming profile: "
+    input = readline()
+    idx = parse(Int, input)
+    (idx < 1 || idx > profileCount) && error("requested profile index is out of range")
+    rs2_delete_stream_profiles_list(profileList)
+    return profiles[idx]
+end
