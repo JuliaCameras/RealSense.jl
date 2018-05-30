@@ -58,7 +58,9 @@ function disable_sensitive_options_for(device)
             rs2_set_option(sensor, RS2_OPTION_EXPOSURE, defRef[], err)
             checkerror(err)
         end
+        rs2_delete_sensor(sensor)
     end
+    rs2_delete_sensor_list(sensorList)
 end
 
 function configure_all_supported_streams(device, width=640, height=480, fps=30)
@@ -76,6 +78,7 @@ function configure_all_supported_streams(device, width=640, height=480, fps=30)
         !isempty(result) && append!(profiles, result)
         push!(sensors, sensor)
     end
+    rs2_delete_sensor_list(sensorList)
     return sensors, profiles
 end
 
@@ -150,3 +153,10 @@ function query_sensors(device)
     rs2_delete_sensor_list(sensorList)
     return sensors
 end
+
+
+function on_frame_callback(f::Ptr{rs2_frame}, u::Ptr{Void})
+    err = Ptr{Ptr{rs2_error}}(0)
+    rs2_process_frame(u, f, err)
+end
+on_frame_ptr = cfunction(on_frame_callback, Void, (Ptr{rs2_frame},Ptr{Void}))

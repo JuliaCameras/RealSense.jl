@@ -1,7 +1,5 @@
 @testset "Sync sanity" begin
 
-end
-
 err = Ref{Ptr{rs2_error}}(0)
 
 filename = joinpath(@__DIR__, "d415_fw_5.9.8_USB3_single.rec")
@@ -27,28 +25,20 @@ checkerror(err)
 rs2_start_processing_queue(sync, frame_queue, err)
 checkerror(err)
 
-function on_frame_callback(f::Ptr{rs2_frame}, u::Ptr{Void})
-    err = Ptr{Ptr{rs2_error}}(0)
-    rs2_process_frame(u, f, err)
-end
-on_frame_ptr = cfunction(on_frame_callback, Void, (Ptr{rs2_frame},Ptr{Void}))
-
-
-profiles = configure_all_supported_streams(device, 640, 480, 30)
+fps = 30
+profiles = configure_all_supported_streams(device, 640, 480, fps)
 
 sensors = query_sensors(device)
 for s in sensors
-    # rs2_start(s, on_frame_ptr, frame_queue, err)
     rs2_start(s, on_frame_ptr, sync, err)
     checkerror(err)
 end
 
 all_timestamps = []
-actual_fps = 30
+actual_fps = fps
 hw_timestamp_domain = false
 system_timestamp_domain = false
 for i = 1:200
-    @show i
     frames = rs2_wait_for_frame(frame_queue, 5000, err)
     checkerror(err)
     is_extendable = rs2_is_frame_extendable_to(frames, RS2_EXTENSION_COMPOSITE_FRAME, err)
@@ -80,17 +70,33 @@ for i = 1:200
         ts = rs2_get_frame_timestamp(frame, err)
         checkerror(err)
         push!(timestemps, ts)
+        rs2_release_frame(frame)
     end
     push!(all_timestamps, timestemps)
+    rs2_release_frame(frames)
 end
 
 for i = 1:30
     frames = rs2_wait_for_frame(frame_queue, 500, err)
     checkerror(err)
+    rs2_release_frame(frames)
 end
 
-@show hw_timestamp_domain, system_timestamp_domain
+@info "Which timestamp domain: " hw_timestamp_domain, system_timestamp_domain
 @test hw_timestamp_domain != system_timestamp_domain
+
+num_of_partial_sync_sets = 0
+for set_timestamps in all_timestamps
+    length(set_timestamps) < length(profiles[2]) && (num_of_partial_sync_sets += 1;)
+    length(set_timestamps) ≤ 1 && continue
+    tmin, tmax = extrema(set_timestamps)
+    @test tmax - tmin ≤ 1000/fps
+end
+@info "Number of partial sync sets: $num_of_partial_sync_sets"
+
+num_of_timestamps = length(all_timestamps)
+@info "Number of timestamps: $num_of_timestamps"
+@test num_of_partial_sync_sets/num_of_timestamps < 0.9
 
 for s in sensors
     rs2_stop(s, err)
@@ -103,3 +109,5 @@ rs2_delete_processing_block(sync)
 rs2_delete_device(device)
 rs2_delete_device_list(deviceList)
 rs2_delete_context(ctx)
+
+end
