@@ -82,22 +82,6 @@ for i = 1:30
     rs2_release_frame(frames)
 end
 
-@info "Which timestamp domain: " hw_timestamp_domain, system_timestamp_domain
-@test hw_timestamp_domain != system_timestamp_domain
-
-num_of_partial_sync_sets = 0
-for set_timestamps in all_timestamps
-    length(set_timestamps) < length(profiles[2]) && (num_of_partial_sync_sets += 1;)
-    length(set_timestamps) ≤ 1 && continue
-    tmin, tmax = extrema(set_timestamps)
-    @test tmax - tmin ≤ 1000/fps
-end
-@info "Number of partial sync sets: $num_of_partial_sync_sets"
-
-num_of_timestamps = length(all_timestamps)
-@info "Number of timestamps: $num_of_timestamps"
-@test num_of_partial_sync_sets/num_of_timestamps < 0.9
-
 for s in sensors
     rs2_stop(s, err)
     checkerror(err)
@@ -109,5 +93,25 @@ rs2_delete_processing_block(sync)
 rs2_delete_device(device)
 rs2_delete_device_list(deviceList)
 rs2_delete_context(ctx)
+
+
+@info "Which timestamp domain: " hw_timestamp_domain, system_timestamp_domain
+@test hw_timestamp_domain != system_timestamp_domain
+
+num_of_partial_sync_sets = 0
+for i in eachindex(all_timestamps)
+    set_timestamps = all_timestamps[i]
+    length(set_timestamps) < length(profiles[2]) && (num_of_partial_sync_sets += 1;)
+    length(set_timestamps) ≤ 1 && continue
+    tmin, tmax = extrema(set_timestamps)
+    if !(tmax - tmin ≤ 1000/fps)
+        @error "tmax - tmin > 1000/fps :", i, set_timestamps
+    end
+end
+@info "Number of partial sync sets: $num_of_partial_sync_sets"
+
+num_of_timestamps = length(all_timestamps)
+@info "Number of timestamps: $num_of_timestamps"
+@test num_of_partial_sync_sets/num_of_timestamps < 0.9
 
 end
