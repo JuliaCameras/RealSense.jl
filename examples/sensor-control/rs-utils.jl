@@ -109,7 +109,7 @@ function get_a_sensor_from_a_device(device)
     checkerror(err)
     @info "Device consists of $sensorCount sensors:"
     sensors = Dict()
-    @info "Found the following devices:"
+    @info "Found the following sensors:"
     for i = 0:sensorCount-1
         sensor = rs2_create_sensor(sensorList, i, err)
         checkerror(err)
