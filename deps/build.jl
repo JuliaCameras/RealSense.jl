@@ -1,3 +1,7 @@
+@static if Sys.iswindows()
+    include(joinpath(@__DIR__, "build_windows.jl"))
+else
+
 using BinaryProvider # requires BinaryProvider 0.3.0 or later
 
 # workaround for https://github.com/JuliaPackaging/BinaryBuilder.jl/issues/194
@@ -39,3 +43,5 @@ end
 
 # Write out a deps.jl file that will contain mappings for our products
 write_deps_file(joinpath(@__DIR__, "deps.jl"), products, verbose=verbose)
+
+end # @static if Sys.iswindows()
