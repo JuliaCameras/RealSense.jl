@@ -11,7 +11,7 @@ Core.eval(Module(:__anon__), :(Main.include($(joinpath(@__DIR__, "build_libusb.v
 const verbose = "--verbose" in ARGS
 const prefix = Prefix(get([a for a in ARGS if a != "--verbose"], 1, joinpath(@__DIR__, "usr")))
 products = [
-    LibraryProduct(prefix, ["librealsense2"], :librealsense),
+    LibraryProduct(prefix, ["librealsense2"], :librealsense2),
 ]
 
 # Download binaries from hosted location
