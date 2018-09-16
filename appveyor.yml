@@ -27,7 +27,7 @@ notifications:
 install:
 # Install IntelRealSense SDK
   - ps: (new-object net.webclient).DownloadFile(
-        "https://github.com/IntelRealSense/librealsense/releases/download/v2.16.0/Intel.RealSense.SDK.exe",
+        "https://github.com/IntelRealSense/librealsense/releases/download/v2.15.0/rssetup-2.15.0.163.exe",
         "C:\projects\Intel.RealSense.SDK.exe")
 
   - C:\projects\Intel.RealSense.SDK.exe /SILENT
