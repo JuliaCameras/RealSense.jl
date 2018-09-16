@@ -1,15 +1,11 @@
-# RealSense
+# LibRealSense
 
-[![Build Status](https://travis-ci.org/Gnimuc/RealSense.jl.svg?branch=master)](https://travis-ci.org/Gnimuc/RealSense.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/uxuto8uj4maq9vj6?svg=true)](https://ci.appveyor.com/project/Gnimuc/realsense-jl)
-[![codecov](https://codecov.io/gh/Gnimuc/RealSense.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/Gnimuc/RealSense.jl)
-[![Coverage Status](https://coveralls.io/repos/github/Gnimuc/RealSense.jl/badge.svg)](https://coveralls.io/github/Gnimuc/RealSense.jl)
-
-Julia wrapper for [Intel RealSense SDK](https://github.com/IntelRealSense/librealsense), a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300). This package is a binding to [the C API of librealsense](https://github.com/IntelRealSense/librealsense/tree/master/include/librealsense2/h) which is very low-level. The target users are those who would like to start writing their own abstraction layers from scratch. If you're looking for an easy to use high-level API, you might be interested in [RealSenseAbstraction.jl](https://github.com/Gnimuc/RealSenseAbstraction.jl).
+Julia wrapper for [Intel RealSense SDK](https://github.com/IntelRealSense/librealsense), a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300). This package is a binding to [the C API of librealsense](https://github.com/IntelRealSense/librealsense/tree/master/include/librealsense2/h) which is very low-level. The target users are those who would like to start writing their own abstraction layers from scratch. If you're looking for an easy to use high-level API, you might be interested in [RealSense.jl](https://github.com/JuliaPerception/RealSense.jl).
 
 ## Installation
+This package is not officially registered, yet.
 ```julia
-Pkg.add("RealSense")
+pkg> add https://github.com/JuliaPerception/LibRealSense.jl.git
 ```
 
 ## Usage
@@ -17,7 +13,7 @@ The interface is exactly the same as librealsense's C API. The example below is 
 The Julia code is very similar to C, but it's more concise and convenient to work with arrays
 and other high-level packages. Other examples can be found in the `examples` folder.
 ```julia
-using RealSense
+using LibRealSense
 using Images
 
 STREAM        = RS2_STREAM_DEPTH  # rs2_stream is a types of data provided by RealSense device

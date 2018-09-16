@@ -2,8 +2,9 @@
 *.jl.*.cov
 *.jl.mem
 
-deps/librealsense
+deps/usr
 deps/deps.jl
-gen/librealsense
 
 *.bag
+deps/build.log
+Manifest.toml

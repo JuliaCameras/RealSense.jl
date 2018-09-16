@@ -1,5 +1,5 @@
-using RealSense
-using Base.Test
+using LibRealSense
+using Test
 
 # As the doc says:
 # "Note: Due to the USB 3.0 translation layer between native hardware and virtual
