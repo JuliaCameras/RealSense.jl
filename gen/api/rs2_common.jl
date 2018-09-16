@@ -352,6 +352,16 @@ const rs2_frame_callback_ptr = Ptr{Cvoid}
 const rs2_frame_processor_callback_ptr = Ptr{Cvoid}
 const rs2_time_t = Cdouble
 const rs2_metadata_type = Clonglong
+const RS2_API_MAJOR_VERSION = 2
+const RS2_API_MINOR_VERSION = 15
+const RS2_API_PATCH_VERSION = 0
+const RS2_API_BUILD_VERSION = 0
+
+# Skipping MacroDefinition: STRINGIFY ( arg ) # arg
+# Skipping MacroDefinition: VAR_ARG_STRING ( arg ) STRINGIFY ( arg )
+# Skipping MacroDefinition: RS2_API_VERSION ( ( ( RS2_API_MAJOR_VERSION ) * 10000 ) + ( ( RS2_API_MINOR_VERSION ) * 100 ) + ( RS2_API_PATCH_VERSION ) )
+# Skipping MacroDefinition: RS2_API_VERSION_STR ( VAR_ARG_STRING ( RS2_API_MAJOR_VERSION . RS2_API_MINOR_VERSION . RS2_API_PATCH_VERSION ) )
+
 const STDepthControlGroup = Cvoid
 const STRsm = Cvoid
 const STRauSupportVectorControl = Cvoid
@@ -364,26 +374,6 @@ const STColorCorrection = Cvoid
 const STAEControl = Cvoid
 const STDepthTableControl = Cvoid
 const STCensusRadius = Cvoid
-
-# begin enum rs2_playback_status
-const rs2_playback_status = UInt32
-const RS2_PLAYBACK_STATUS_UNKNOWN = 0 |> UInt32
-const RS2_PLAYBACK_STATUS_PLAYING = 1 |> UInt32
-const RS2_PLAYBACK_STATUS_PAUSED = 2 |> UInt32
-const RS2_PLAYBACK_STATUS_STOPPED = 3 |> UInt32
-const RS2_PLAYBACK_STATUS_COUNT = 4 |> UInt32
-# end enum rs2_playback_status
-
-const rs2_playback_status_changed_callback_ptr = Ptr{Cvoid}
-const RS2_API_MAJOR_VERSION = 2
-const RS2_API_MINOR_VERSION = 15
-const RS2_API_PATCH_VERSION = 0
-const RS2_API_BUILD_VERSION = 0
-
-# Skipping MacroDefinition: STRINGIFY ( arg ) # arg
-# Skipping MacroDefinition: VAR_ARG_STRING ( arg ) STRINGIFY ( arg )
-# Skipping MacroDefinition: RS2_API_VERSION ( ( ( RS2_API_MAJOR_VERSION ) * 10000 ) + ( ( RS2_API_MINOR_VERSION ) * 100 ) + ( RS2_API_PATCH_VERSION ) )
-# Skipping MacroDefinition: RS2_API_VERSION_STR ( VAR_ARG_STRING ( RS2_API_MAJOR_VERSION . RS2_API_MINOR_VERSION . RS2_API_PATCH_VERSION ) )
 
 # begin enum rs2_recording_mode
 const rs2_recording_mode = UInt32
@@ -415,3 +405,14 @@ struct rs2_software_video_frame
     frame_number::Cint
     profile::Ptr{rs2_stream_profile}
 end
+
+# begin enum rs2_playback_status
+const rs2_playback_status = UInt32
+const RS2_PLAYBACK_STATUS_UNKNOWN = 0 |> UInt32
+const RS2_PLAYBACK_STATUS_PLAYING = 1 |> UInt32
+const RS2_PLAYBACK_STATUS_PAUSED = 2 |> UInt32
+const RS2_PLAYBACK_STATUS_STOPPED = 3 |> UInt32
+const RS2_PLAYBACK_STATUS_COUNT = 4 |> UInt32
+# end enum rs2_playback_status
+
+const rs2_playback_status_changed_callback_ptr = Ptr{Cvoid}

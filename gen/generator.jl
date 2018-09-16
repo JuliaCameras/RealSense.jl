@@ -7,7 +7,7 @@ const LLVM_LIBDIR  = readchomp(`$LLVM_CONFIG --libdir`)
 const LLVM_INCLUDE = joinpath(LLVM_LIBDIR, "clang", LLVM_VERSION, "include")
 
 const RS_INCLUDE = joinpath(@__DIR__, "..", "deps", "usr", "include", "librealsense2") |> normpath
-const RS_HEADERS = [joinpath(root, file) for (root, dirs, files) in walkdir(RS_INCLUDE) for file in files if endswith(file, ".h")]
+const RS_HEADERS = [joinpath(RS_INCLUDE, cHeader) for cHeader in readdir(RS_INCLUDE) if endswith(cHeader, ".h")]
 
 function rewriter(ex::Expr)
     if Meta.isexpr(ex, :struct)
