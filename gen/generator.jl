@@ -13,7 +13,7 @@ parse_headers!(ctx, RS_HEADERS,
                )
 
 # settings
-ctx.libname = "librealsense"
+ctx.libname = "librealsense2"
 ctx.options["is_function_strictly_typed"] = false
 ctx.options["is_struct_mutable"] = false
 
