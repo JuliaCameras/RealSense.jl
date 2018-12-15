@@ -1,41 +1,59 @@
-using Clang.wrap_c
-using Clang.cindex
-import Clang.LLVM_CONFIG
-
-const LLVM_VERSION = readchomp(`$LLVM_CONFIG --version`)
-const LLVM_LIBDIR  = readchomp(`$LLVM_CONFIG --libdir`)
-const LLVM_INCLUDE = joinpath(LLVM_LIBDIR, "clang", LLVM_VERSION, "include")
+using Clang
 
 const RS_INCLUDE = joinpath(@__DIR__, "..", "deps", "usr", "include", "librealsense2") |> normpath
-const RS_HEADERS = [joinpath(RS_INCLUDE, cHeader) for cHeader in readdir(RS_INCLUDE) if endswith(cHeader, ".h")]
+const RS_HEADERS = [joinpath(RS_INCLUDE, header) for header in readdir(RS_INCLUDE) if endswith(header, ".h")]
 
-function rewriter(ex::Expr)
-    if Meta.isexpr(ex, :struct)
-        block = ex.args[3]
-        isempty(block.args) && (typename = ex.args[2]; return :(const $typename = Cvoid);)
+# create a work context
+ctx = DefaultContext()
+
+# parse headers
+parse_headers!(ctx, RS_HEADERS,
+               args=["-I", joinpath(RS_INCLUDE, "..")],
+               includes=vcat(RS_INCLUDE, LLVM_INCLUDE),
+               )
+
+# settings
+ctx.libname = "librealsense"
+ctx.options["is_function_strictly_typed"] = false
+ctx.options["is_struct_mutable"] = false
+
+# write output
+api_file = joinpath(@__DIR__, "rs2_api.jl")
+api_stream = open(api_file, "w")
+
+for trans_unit in ctx.trans_units
+    root_cursor = getcursor(trans_unit)
+    push!(ctx.cursor_stack, root_cursor)
+    header = spelling(root_cursor)
+    @info "wrapping header: $header ..."
+    # loop over all of the child cursors and wrap them, if appropriate.
+    ctx.children = children(root_cursor)
+    for (i, child) in enumerate(ctx.children)
+        child_name = name(child)
+        child_header = filename(child)
+        ctx.children_index = i
+        # choose which cursor to wrap
+        startswith(child_name, "__") && continue  # skip compiler definitions
+        child_name in keys(ctx.common_buffer) && continue  # already wrapped
+        child_header != header && continue  # skip if cursor filename is not in the headers to be wrapped
+
+        wrap!(ctx, child)
     end
-    Meta.isexpr(ex, :function) || return ex
-    signature = ex.args[1]
-    for i = 2:length(signature.args)
-        func_arg = signature.args[i]
-        if !(func_arg isa Symbol) && Meta.isexpr(func_arg, :(::))
-            signature.args[i] = func_arg.args[1]
-        end
-    end
-    return ex
+    @info "writing $(api_file)"
+    println(api_stream, "# Julia wrapper for header: $header")
+    println(api_stream, "# Automatically generated using Clang.jl\n")
+    print_buffer(api_stream, ctx.api_buffer)
+    empty!(ctx.api_buffer)  # clean up api_buffer for the next header
 end
-rewriter(A::Array) = [rewriter(a) for a in A]
-rewriter(arg) = arg
+close(api_stream)
 
-wrap_header(top_hdr::String, cursor_header::String) = startswith(dirname(cursor_header), RS_INCLUDE) && (top_hdr == cursor_header)
+# write "common" definitions: types, typealiases, etc.
+common_file = joinpath(@__DIR__, "rs2_common.jl")
+open(common_file, "w") do f
+    println(f, "# Automatically generated using Clang.jl\n")
+    print_buffer(f, dump_to_buffer(ctx.common_buffer))
+end
 
-wc = wrap_c.init(; headers = RS_HEADERS,
-                   output_file = joinpath(@__DIR__, "api", "rs2_api.jl"),
-                   common_file = joinpath(@__DIR__, "api", "rs2_common.jl"),
-                   clang_includes = vcat(LLVM_INCLUDE, RS_INCLUDE),
-                   header_wrapped = wrap_header,
-                   header_library = x->"librealsense2",
-                   clang_diagnostics = true,
-                   rewriter = rewriter)
-
-run(wc)
+# uncomment the following code to generate dependency and template files
+# copydeps(dirname(api_file))
+# print_template(joinpath(dirname(api_file), "LibTemplate.jl"))
