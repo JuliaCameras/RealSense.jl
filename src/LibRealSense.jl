@@ -1,21 +1,13 @@
 module LibRealSense
 
-# Load in `deps.jl`, complaining if it does not exist
-const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
-if !isfile(depsjl_path)
-    error("LibRealSense was not build properly. Please run Pkg.build(\"LibRealSense\").")
-end
-include(depsjl_path)
+using librealsense_jll
+export librealsense_jll
 
-# Module initialization function
-function __init__()
-    check_deps()
-end
+using CSyntax.CEnum
 
-include("CEnum.jl")
-using .CEnum
-
-include("ctypes.jl")
+const Ctm = Base.Libc.TmStruct
+const Ctime_t = UInt
+const Cclock_t = UInt
 export Ctm, Ctime_t, Cclock_t
 
 include(joinpath(@__DIR__, "..", "gen", "rs2_common.jl"))
@@ -31,6 +23,5 @@ const RS2_API_VERSION = RS2_API_MAJOR_VERSION * 10000 + RS2_API_MINOR_VERSION * 
 const RS2_API_VERSION_STR = "$(RS2_API_MAJOR_VERSION).$(RS2_API_MINOR_VERSION).$(RS2_API_PATCH_VERSION)"
 
 export RS2_API_VERSION, RS2_API_VERSION_STR
-
 
 end # module
