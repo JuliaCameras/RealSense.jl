@@ -1,14 +1,15 @@
 using Clang
+using librealsense_jll
 
-const RS_INCLUDE = joinpath(@__DIR__, "..", "deps", "usr", "include", "librealsense2") |> normpath
-const RS_HEADERS = [joinpath(RS_INCLUDE, header) for header in readdir(RS_INCLUDE) if endswith(header, ".h")]
+const RS_INCLUDE = joinpath(dirname(librealsense_jll.librealsense2_path), "..", "include", "librealsense2") |> normpath
+const RS_HEADERS = [joinpath(root, header) for (root, dirs, files) in walkdir(RS_INCLUDE) for header in files if endswith(header, ".h")]
 
 # create a work context
 ctx = DefaultContext()
 
 # parse headers
 parse_headers!(ctx, RS_HEADERS,
-               args=["-I", joinpath(RS_INCLUDE, "..")],
+               args=[map(x->"-I"*x, find_std_headers())..., "-DCIMGUI_DEFINE_ENUMS_AND_STRUCTS"],
                includes=vcat(RS_INCLUDE, LLVM_INCLUDE),
                )
 
@@ -40,7 +41,7 @@ for trans_unit in ctx.trans_units
         wrap!(ctx, child)
     end
     @info "writing $(api_file)"
-    println(api_stream, "# Julia wrapper for header: $header")
+    println(api_stream, "# Julia wrapper for header: $(basename(header))")
     println(api_stream, "# Automatically generated using Clang.jl\n")
     print_buffer(api_stream, ctx.api_buffer)
     empty!(ctx.api_buffer)  # clean up api_buffer for the next header
