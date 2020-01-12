@@ -1,7 +1,41 @@
 module LibRealSense
 
-using librealsense_jll
-export librealsense_jll
+const LIBREALSENSE_VERSION = v"2.31.0"
+
+@static if Sys.iswindows()
+    import Libdl
+
+    const WINDOWS_SDK_DIR = joinpath(homedir(), "..", "..", "Program Files (x86)") |> normpath
+    const WINDOWS_DEFAULT_DIR = Sys.WORD_SIZE == 64 ? joinpath(WINDOWS_SDK_DIR, "Intel RealSense SDK 2.0", "bin", "x64") : joinpath(WINDOWS_SDK_DIR, "Intel RealSense SDK 2.0", "bin", "x86")
+    # try to find the lib
+    libdir =  get(ENV, "JULIA_LIBREALSENSE_PATH", WINDOWS_DEFAULT_DIR)
+    lib = Libdl.find_library(["realsense2"], [libdir])
+    lib == "" && error("Couldn't find realsense2.dll in $libdir. Please install Intel RealSense SDK 2.0 or set environment variable `JULIA_LIBREALSENSE_PATH`.")
+    const librealsense2 = Libdl.dlpath(lib) |> x->replace(x, "\\"=>"\\\\")
+    !isfile(librealsense2) && error("$librealsense2 does not exist.")
+
+    hdl = Libdl.dlopen_e(librealsense2)
+    if hdl == C_NULL
+        error("$librealsense2 cannot be opened.")
+    else
+        get_api_version = Libdl.dlsym_e(hdl, :rs2_get_api_version)
+        @assert get_api_version != C_NULL "Could not find `rs2_get_api_version` within $librealsense2."
+        err = Ref{Ptr{Cvoid}}(0)
+        version = ccall(get_api_version, Cint, (Ptr{Ptr{Cvoid}},), err)
+        @assert err[] == C_NULL "Something happened when calling `rs2_get_api_version`."
+        major = version ÷ 10000
+        minor = (version - 10000*major) ÷ 100
+        patch = (version - 10000*major - 100*minor)
+        if major != LIBREALSENSE_VERSION.major && minor != LIBREALSENSE_VERSION.minor
+            error("""API version mismatch:
+                  The system librealsense's API version is v\$(major).\$(minor).\$(patch), but the one used in RealSense.jl is $LIBREALSENSE_VERSION.
+                  Please either upgrade Intel RealSense SDK or RealSense.jl.""")
+        end
+    end
+else
+    using librealsense_jll
+    export librealsense_jll
+end
 
 using CSyntax.CEnum
 
