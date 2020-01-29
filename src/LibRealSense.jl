@@ -1,6 +1,6 @@
 module LibRealSense
 
-const LIBREALSENSE_VERSION = v"2.31.0"
+const LIBREALSENSE_VERSION = v"2.31.1"
 
 @static if Sys.iswindows()
     import Libdl
@@ -27,8 +27,8 @@ const LIBREALSENSE_VERSION = v"2.31.0"
         minor = (version - 10000*major) ÷ 100
         patch = (version - 10000*major - 100*minor)
         if major != LIBREALSENSE_VERSION.major && minor != LIBREALSENSE_VERSION.minor
-            error("""API version mismatch:
-                  The system librealsense's API version is v\$(major).\$(minor).\$(patch), but the one used in RealSense.jl is $LIBREALSENSE_VERSION.
+            @warn("""API version mismatch:
+                  The system librealsense's API version is v$(major).$(minor).$(patch), but the one used in RealSense.jl is $LIBREALSENSE_VERSION.
                   Please either upgrade Intel RealSense SDK or RealSense.jl.""")
         end
     end

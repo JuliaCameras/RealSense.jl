@@ -1,11 +1,5 @@
-using LibRealSense
+using RealSense.LibRealSense
 using Test
-
-# As the doc says:
-# "Note: Due to the USB 3.0 translation layer between native hardware and virtual
-#  machine, the librealsense team does not support installation in a VM."
-# so we only run tests on MacOS.
-get(ENV, "TRAVIS_OS_NAME", "") == "linux" && exit()
 
 err = Ref{Ptr{rs2_error}}(0)
 

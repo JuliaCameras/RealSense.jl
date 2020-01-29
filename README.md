@@ -1,11 +1,15 @@
 # RealSense
 
+[![Build Status](https://travis-ci.com/JuliaCameras/RealSense.jl.svg?branch=master)](https://travis-ci.com/JuliaCameras/RealSense.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/gjfmkfor02eqvrr5?svg=true)](https://ci.appveyor.com/project/Gnimuc/realsense-jl)
+[![codecov](https://codecov.io/gh/JuliaCameras/RealSense.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaCameras/RealSense.jl)
+
 Julia wrapper for [Intel RealSense SDK](https://github.com/IntelRealSense/librealsense), a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300).  
 
 ## Installation
 This package is not officially registered, yet.
 ```julia
-pkg> add https://github.com/JuliaPerception/LibRealSense.jl.git
+pkg> add https://github.com/JuliaPerception/RealSense.jl.git
 ```
 Note that, you should install [Intel RealSense SDK](https://github.com/IntelRealSense/librealsense) firstly if you're on Windows.
 
