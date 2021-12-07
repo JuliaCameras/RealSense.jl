@@ -1,60 +1,22 @@
-using Clang
+using Clang.Generators
 using librealsense_jll
 
-const RS_INCLUDE = joinpath(dirname(librealsense_jll.librealsense2_path), "..", "include", "librealsense2") |> normpath
+# cd(@__DIR__)
+cd("/home/user/.julia/packages/RealSense/RzHVf/gen")
+
+include_dir = joinpath(librealsense_jll.artifact_dir, "include") |> normpath
+
+const RS_INCLUDE = joinpath(include_dir, "librealsense2")
 const RS_HEADERS = [joinpath(root, header) for (root, dirs, files) in walkdir(RS_INCLUDE) for header in files if endswith(header, ".h")]
 
-# create a work context
-ctx = DefaultContext()
+options = load_options(joinpath(@__DIR__, "generator.toml"))
 
-# parse headers
-parse_headers!(ctx, RS_HEADERS,
-               args=[map(x->"-I"*x, find_std_headers())..., "-DCIMGUI_DEFINE_ENUMS_AND_STRUCTS"],
-               includes=vcat(RS_INCLUDE, LLVM_INCLUDE),
-               )
 
-# settings
-ctx.libname = "librealsense2"
-ctx.options["is_function_strictly_typed"] = false
-ctx.options["is_struct_mutable"] = false
+# add compiler flags, e.g. "-DXXXXXXXXX"
+args = get_default_args()
+push!(args, "-I$include_dir")
 
-# write output
-api_file = joinpath(@__DIR__, "rs2_api.jl")
-api_stream = open(api_file, "w")
+ctx = create_context(RS_HEADERS, args, options)
 
-for trans_unit in ctx.trans_units
-    root_cursor = getcursor(trans_unit)
-    push!(ctx.cursor_stack, root_cursor)
-    header = spelling(root_cursor)
-    @info "wrapping header: $header ..."
-    # loop over all of the child cursors and wrap them, if appropriate.
-    ctx.children = children(root_cursor)
-    for (i, child) in enumerate(ctx.children)
-        child_name = name(child)
-        child_header = filename(child)
-        ctx.children_index = i
-        # choose which cursor to wrap
-        startswith(child_name, "__") && continue  # skip compiler definitions
-        child_name in keys(ctx.common_buffer) && continue  # already wrapped
-        child_header != header && continue  # skip if cursor filename is not in the headers to be wrapped
-
-        wrap!(ctx, child)
-    end
-    @info "writing $(api_file)"
-    println(api_stream, "# Julia wrapper for header: $(basename(header))")
-    println(api_stream, "# Automatically generated using Clang.jl\n")
-    print_buffer(api_stream, ctx.api_buffer)
-    empty!(ctx.api_buffer)  # clean up api_buffer for the next header
-end
-close(api_stream)
-
-# write "common" definitions: types, typealiases, etc.
-common_file = joinpath(@__DIR__, "rs2_common.jl")
-open(common_file, "w") do f
-    println(f, "# Automatically generated using Clang.jl\n")
-    print_buffer(f, dump_to_buffer(ctx.common_buffer))
-end
-
-# uncomment the following code to generate dependency and template files
-# copydeps(dirname(api_file))
-# print_template(joinpath(dirname(api_file), "LibTemplate.jl"))
+# run generator
+build!(ctx)
